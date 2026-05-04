@@ -18,6 +18,7 @@ android {
     val abis = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64")
 
     namespace = "com.maxrave.simpmusic"
+    publishNonDefault = true
     compileSdk = 36
 
     defaultConfig {
