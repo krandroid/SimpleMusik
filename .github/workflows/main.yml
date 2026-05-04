@@ -1,29 +1,31 @@
-name: Build Debug APK
-on: workflow_dispatch
+name: Build App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Ambil kode sumber
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Siapkan Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Berikan izin eksekusi
+        run: chmod +x gradlew
 
-      - name: Grant execute permission
-        run: chmod +x ./gradlew
+      - name: Bangun Aplikasi
+        run: ./gradlew assembleRelease --warning-mode none
 
-      - name: Build Android Debug APK
-        run: ./gradlew :androidApp:assembleDebug --no-daemon
-
-      - name: Upload APK
+      - name: Simpan Berkas APK
         uses: actions/upload-artifact@v4
         with:
-          name: SimpMusic-debug
-          path: androidApp/build/outputs/apk/debug/app-debug.apk
+          name: SimpleMusik
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
