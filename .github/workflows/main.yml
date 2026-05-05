@@ -1,31 +1,53 @@
-name: Build App
+name: Build SimpMusic Android TV
+run-name: Build SimpMusic Android TV ${{ github.ref_name || github.event.inputs.tag_version }}
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      tag_version:
+        description: 'Tag versi SimpMusic yang mau di-build'
+        required: true
+        default: 'v1.1.1'
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:
+    name: Build & Sign APK TV
     runs-on: ubuntu-latest
-    steps:
-      - name: Ambil kode sumber
-        uses: actions/checkout@v4
+    timeout-minutes: 30
 
-      - name: Siapkan Java
+    steps:
+      - name: Tentukan Versi Tag
+        id: get_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ github.event.inputs.tag_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+          echo "Building version: $(cat $GITHUB_OUTPUT)"
+
+      - name: Ambil Kode Sumber SimpMusic
+        uses: actions/checkout@v4
+        with:
+          repository: maxrave-dev/SimpMusic
+          ref: ${{ steps.get_tag.outputs.TAG }}
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Siapkan JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
-      - name: Berikan izin eksekusi
-        run: chmod +x gradlew
+      - name: Atur Izin Gradle
+        run: chmod +x ./gradlew
 
-      - name: Bangun Aplikasi
-        run: ./gradlew assembleRelease --warning-mode none
-
-      - name: Simpan Berkas APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SimpleMusik
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+      - name: Patch Manifest untuk Android TV
+        run: |
+          # 1. Tambahkan fitur leanback & non-touchscreen
+          sed -i '/<\/manifest>/i \
